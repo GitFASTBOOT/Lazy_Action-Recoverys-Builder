@@ -11,6 +11,7 @@ on:
         options:
         - twrp-12.1
         - twrp-11
+        - twrp-14
         - twrp-10.0-deprecated
         - twrp-9.0
         - twrp-8.1
