@@ -53,6 +53,9 @@ jobs:
         echo "Device Tree: ${{ inputs.DEVICE_TREE }}"
         echo "Device Branch: ${{ inputs.DEVICE_TREE_BRANCH }}"
         echo "Build Target: ${{ inputs.BUILD_TARGET }}"
+
+    - name: Cleanup
+      uses: rokibhasansagar/slimhub_actions@main 
       
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
