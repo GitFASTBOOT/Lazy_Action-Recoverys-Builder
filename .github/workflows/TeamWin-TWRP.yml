@@ -9,9 +9,16 @@ on:
         default: ''
         type: choice
         options:
-        - lineage-20
-        - lineage-19.1
-        - lineage-18.1
+        - twrp-12.1
+        - twrp-11
+        - twrp-10.0-deprecated
+        - twrp-9.0
+        - twrp-8.1
+        - twrp-8.1-macOS
+        - twrp-7.1
+        - twrp-6.0
+        - twrp-5.1
+        - twrp-4.4-deprecated
       DEVICE_TREE:
         description: 'Custom Recovery Tree' # Your already made Device Tree for TWRP
         required: true
@@ -66,14 +73,15 @@ jobs:
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
       with:
-        swap-size-gb: 50
+        swap-size-gb: 12
+
     - name: Check Manifest Branch
       run: |
-        if [ "${{ inputs.MANIFEST_BRANCH }}" == "lineage-19.1" ] || [ "${{ inputs.MANIFEST_BRANCH }}" == "lineage-20" ]; then
+        if [ ${{ inputs.MANIFEST_BRANCH }} == 'twrp-11' ] || [ ${{ inputs.MANIFEST_BRANCH }} == 'twrp-12.1' ]; then
             echo "MANIFEST=https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git" >> $GITHUB_ENV
             echo "CHECK_LEGACY_BRANCH=false" >> $GITHUB_ENV
         else
-            echo "MANIFEST=https://github.com/LineageOS/android.git -b lineage-19.1" >> $GITHUB_ENV
+            echo "MANIFEST=https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git" >> $GITHUB_ENV
             echo "CHECK_LEGACY_BRANCH=true" >> $GITHUB_ENV
         fi
 
