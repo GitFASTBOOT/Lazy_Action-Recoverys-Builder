@@ -1,0 +1,117 @@
+name: LineageOS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: 'LineageOS Manifest Branch'
+        required: true
+        default: 'lineage-20'
+        type: choice
+        options:
+        - lineage-20
+        - lineage-19.1
+        - lineage-18.1
+      DEVICE_TREE:
+        description: 'Custom Device Tree for LineageOS'
+        required: true
+        default: 'https://github.com/lazycodebuilder/device_rmx1851'
+      DEVICE_TREE_BRANCH:
+        description: 'Custom Device Tree Branch'
+        required: true
+        default: 'lineage-20'
+      BUILD_TARGET:
+        description: 'Specify your Build Target'
+        required: true
+        default: 'bacon'
+        type: choice
+        options:
+        - bacon
+        - bootimage
+        - recoveryimage
+      SETUP_CCACHE:
+        description: 'Enable ccache for faster builds'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  build:
+    name: Build LineageOS by ${{ github.actor }}
+    runs-on: ubuntu-20.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v4
+      
+    - name: Display Inputs
+      run: |
+        echo "Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}"
+        echo "Device Tree: ${{ inputs.DEVICE_TREE }}"
+        echo "Device Branch: ${{ inputs.DEVICE_TREE_BRANCH }}"
+        echo "Build Target: ${{ inputs.BUILD_TARGET }}"
+      
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 12
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt -y install gperf gcc-multilib lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma libstdc++6 python3 git
+    
+    - name: Install OpenJDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '11'
+
+    - name: Install Git-Repo
+      run: |
+        mkdir ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
+
+    - name: Initialize Repo
+      run: |
+        mkdir lineageos
+        cd lineageos
+        repo init --depth=1 -u https://github.com/LineageOS/android.git -b ${{ inputs.MANIFEST_BRANCH }}
+
+    - name: Repo Sync
+      run: |
+        cd lineageos
+        repo sync -j$(nproc --all) --force-sync
+
+    - name: Clone Device Tree
+      run: |
+        cd lineageos
+        git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./device_tree
+
+    - name: Setup Build Environment
+      run: |
+        cd lineageos
+        source build/envsetup.sh
+        if [ ${{ inputs.SETUP_CCACHE }} == 'true' ]; then
+          export USE_CCACHE=1
+          ccache -M 100G
+        fi
+        lunch lineage_${{ inputs.DEVICE_TREE_BRANCH }}-userdebug
+
+    - name: Start Build
+      run: |
+        cd lineageos
+        make ${{ inputs.BUILD_TARGET }} -j$(nproc --all)
+      
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: lineageos-build
+        path: |
+          lineageos/out/target/product/*/*.zip
+          lineageos/out/target/product/*/*.img
