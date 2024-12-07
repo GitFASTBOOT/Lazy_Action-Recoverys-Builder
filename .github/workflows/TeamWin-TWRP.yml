@@ -67,7 +67,6 @@ jobs:
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 50
-
     - name: Check Manifest Branch
       run: |
         if [ "${{ inputs.MANIFEST_BRANCH }}" == "lineage-19.1" ] || [ "${{ inputs.MANIFEST_BRANCH }}" == "lineage-20" ]; then
