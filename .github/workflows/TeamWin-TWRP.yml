@@ -27,6 +27,12 @@ on:
         description: 'Custom Recovery Tree Branch' # Your Device Tree Branch, make sure it's right.
         required: true
         default: 'android-14'
+      COMMON_TREE_URL:
+        description: 'COMMON_TREE_URL (if no common tree, leave blank)'
+        required: false
+      COMMON_PATH:
+        description: 'COMMON_PATH (if no common tree, leave blank)'
+        required: false
       BUILD_TARGET:
         description: 'Specify your Build Target' # Pick among boot, recovery and vendor_boot
         required: true
@@ -130,6 +136,14 @@ jobs:
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./device_tree
         cd device_tree
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Clone common tree
+      if: |
+        github.event.inputs.COMMON_TREE_URL != null
+        && github.event.inputs.COMMON_PATH != null
+      run: |
+        git clone ${{ github.event.inputs.COMMON_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.COMMON_PATH }}
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Extracting variables from .mk file
       run: |
